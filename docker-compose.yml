@@ -1,0 +1,37 @@
+services:
+  postgres-db:
+    image: postgres:16
+    container_name: prn232_lms_postgres
+    environment:
+      POSTGRES_DB: PRN232_LMS
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: cuber123@
+    ports:
+      - "6000:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db.sql:/docker-entrypoint-initdb.d/db.sql
+    networks:
+      - lms-network
+
+  lms-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prn232_lms_api
+    ports:
+      - "5212:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres-db;Port=5432;Database=PRN232_LMS;Username=postgres;Password=cuber123@
+    depends_on:
+      - postgres-db
+    networks:
+      - lms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  lms-network:
