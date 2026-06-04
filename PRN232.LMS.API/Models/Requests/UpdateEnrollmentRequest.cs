@@ -4,8 +4,12 @@ namespace PRN232.LMS.API.Models.Requests;
 
 public class UpdateEnrollmentRequest
 {
+    [Range(1, int.MaxValue)]
     public int StudentId { get; set; }
+
+    [Range(1, int.MaxValue)]
     public int CourseId { get; set; }
+
     public DateTime EnrollDate { get; set; }
 
     [Required, MaxLength(20)]

@@ -95,7 +95,15 @@ public static class CommonApiMappings
                 StudentId = e.StudentId,
                 CourseId = e.CourseId,
                 EnrollDate = e.EnrollDate,
-                Status = e.Status
+                Status = e.Status,
+                Student = e.Student is null
+                    ? null
+                    : new EnrollmentStudentBriefResponse
+                    {
+                        StudentId = e.Student.StudentId,
+                        FullName = e.Student.FullName,
+                        Email = e.Student.Email
+                    }
             }).ToList()
         };
 
@@ -209,7 +217,16 @@ public static class CommonApiMappings
                 {
                     CourseId = model.Course.CourseId,
                     CourseName = model.Course.CourseName,
-                    SemesterId = model.Course.SemesterId
+                    SemesterId = model.Course.SemesterId,
+                    Semester = model.Course.Semester is null
+                        ? null
+                        : new CourseSemesterBriefResponse
+                        {
+                            SemesterId = model.Course.Semester.SemesterId,
+                            SemesterName = model.Course.Semester.SemesterName,
+                            StartDate = model.Course.Semester.StartDate,
+                            EndDate = model.Course.Semester.EndDate
+                        }
                 }
         };
 

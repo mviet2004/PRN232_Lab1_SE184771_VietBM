@@ -23,4 +23,5 @@ public class EnrollmentCourseBriefBusinessModel
     public int CourseId { get; set; }
     public string CourseName { get; set; } = null!;
     public int SemesterId { get; set; }
+    public CourseSemesterBriefBusinessModel? Semester { get; set; }
 }

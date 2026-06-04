@@ -26,8 +26,7 @@ public class CoursesController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int size = 10,
         [FromQuery] string? fields = null,
-        [FromQuery] string? expand = null,
-        [FromQuery] int? semesterId = null)
+        [FromQuery] string? expand = null)
     {
         var result = await _courseService.GetListAsync(new CourseListQuery
         {
@@ -36,8 +35,7 @@ public class CoursesController : ControllerBase
             Page = page,
             Size = size,
             Fields = fields,
-            Expand = expand,
-            SemesterId = semesterId
+            Expand = expand
         });
 
         var items = result.Items.Select(x => x.ToResponseObject(fields)).ToList();
@@ -77,9 +75,16 @@ public class CoursesController : ControllerBase
             return BadRequest(ApiResponse<CourseResponse>.Fail("Invalid request", ModelState));
         }
 
-        var created = await _courseService.CreateAsync(request.ToBusinessModel());
-        return CreatedAtAction(nameof(GetById), new { id = created.CourseId },
-            ApiResponse<CourseResponse>.Ok(created.ToResponse(), "Course created successfully"));
+        try
+        {
+            var created = await _courseService.CreateAsync(request.ToBusinessModel());
+            return CreatedAtAction(nameof(GetById), new { id = created.CourseId },
+                ApiResponse<CourseResponse>.Ok(created.ToResponse(), "Course created successfully"));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<CourseResponse>.Fail(ex.Message));
+        }
     }
 
     [HttpPut("{id:int}")]
@@ -90,13 +95,20 @@ public class CoursesController : ControllerBase
             return BadRequest(ApiResponse<CourseResponse>.Fail("Invalid request", ModelState));
         }
 
-        var updated = await _courseService.UpdateAsync(id, request.ToBusinessModel());
-        if (updated is null)
+        try
         {
-            return NotFound(ApiResponse<CourseResponse>.Fail("Course not found"));
-        }
+            var updated = await _courseService.UpdateAsync(id, request.ToBusinessModel());
+            if (updated is null)
+            {
+                return NotFound(ApiResponse<CourseResponse>.Fail("Course not found"));
+            }
 
-        return Ok(ApiResponse<CourseResponse>.Ok(updated.ToResponse(), "Course updated successfully"));
+            return Ok(ApiResponse<CourseResponse>.Ok(updated.ToResponse(), "Course updated successfully"));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<CourseResponse>.Fail(ex.Message));
+        }
     }
 
     [HttpDelete("{id:int}")]

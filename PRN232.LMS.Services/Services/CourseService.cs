@@ -66,12 +66,23 @@ public class CourseService : ICourseService
 
     public async Task<CourseBusinessModel?> GetByIdAsync(int id)
     {
-        var entity = await _unitOfWork.Courses.GetByIdAsync(id);
-        return entity?.ToBusinessModel();
+        var entity = await _unitOfWork.Courses.GetAll()
+            .Include(c => c.Semester)
+            .Include(c => c.Enrollments)
+            .ThenInclude(e => e.Student)
+            .FirstOrDefaultAsync(c => c.CourseId == id);
+
+        return entity?.ToBusinessModel(includeSemester: true, includeEnrollments: true);
     }
 
     public async Task<CourseBusinessModel> CreateAsync(CourseBusinessModel model)
     {
+        var semesterExists = await _unitOfWork.Semesters.ExistsAsync(s => s.SemesterId == model.SemesterId);
+        if (!semesterExists)
+        {
+            throw new InvalidOperationException("Semester does not exist.");
+        }
+
         var entity = model.ToEntity();
         await _unitOfWork.Courses.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
@@ -82,6 +93,12 @@ public class CourseService : ICourseService
     {
         var entity = await _unitOfWork.Courses.GetByIdAsync(id);
         if (entity is null) return null;
+
+        var semesterExists = await _unitOfWork.Semesters.ExistsAsync(s => s.SemesterId == model.SemesterId);
+        if (!semesterExists)
+        {
+            throw new InvalidOperationException("Semester does not exist.");
+        }
 
         entity.UpdateEntity(model);
         _unitOfWork.Courses.Update(entity);

@@ -20,19 +20,12 @@ public class StudentService : IStudentService
 
     public async Task<StudentBusinessModel?> GetByIdAsync(int id, string? expand = null)
     {
-        var includeEnrollments = ShouldExpand(expand, "enrollments");
-        Student? entity;
+        var entity = await _unitOfWork.Students.GetAll()
+            .Include(s => s.Enrollments)
+            .ThenInclude(e => e.Course)
+            .FirstOrDefaultAsync(s => s.StudentId == id);
 
-        if (includeEnrollments)
-        {
-            entity = await _unitOfWork.Students.GetByIdAsync(id, s => s.Enrollments);
-        }
-        else
-        {
-            entity = await _unitOfWork.Students.GetByIdAsync(id);
-        }
-
-        return entity?.ToBusinessModel(includeEnrollments);
+        return entity?.ToBusinessModel(includeEnrollments: true);
     }
 
     public async Task<PagedResult<StudentBusinessModel>> GetListAsync(StudentListQuery query)
@@ -49,6 +42,7 @@ public class StudentService : IStudentService
         {
             var keyword = query.Search.Trim().ToLower();
             studentsQuery = studentsQuery.Where(s =>
+                s.StudentId.ToString().Contains(keyword) ||
                 s.FullName.ToLower().Contains(keyword) ||
                 s.Email.ToLower().Contains(keyword));
         }

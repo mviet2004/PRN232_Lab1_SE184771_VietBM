@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace PRN232.LMS.API.Models.Responses;
 
 public class SemesterResponse
@@ -6,6 +8,7 @@ public class SemesterResponse
     public string SemesterName { get; set; } = null!;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<SemesterCourseBriefResponse>? Courses { get; set; }
 }
 

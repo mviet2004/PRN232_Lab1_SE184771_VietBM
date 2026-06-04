@@ -74,7 +74,15 @@ public static class CommonEntityMappings
                 StudentId = e.StudentId,
                 CourseId = e.CourseId,
                 EnrollDate = e.EnrollDate,
-                Status = e.Status
+                Status = e.Status,
+                Student = e.Student is not null
+                    ? new EnrollmentStudentBriefBusinessModel
+                    {
+                        StudentId = e.Student.StudentId,
+                        FullName = e.Student.FullName,
+                        Email = e.Student.Email
+                    }
+                    : null
             }).ToList();
         }
 
@@ -118,7 +126,11 @@ public static class CommonEntityMappings
         entity.Credit = model.Credit;
     }
 
-    public static EnrollmentBusinessModel ToBusinessModel(this Enrollment entity, bool includeStudent = false, bool includeCourse = false) =>
+    public static EnrollmentBusinessModel ToBusinessModel(
+        this Enrollment entity,
+        bool includeStudent = false,
+        bool includeCourse = false,
+        bool includeSemester = false) =>
         new()
         {
             EnrollmentId = entity.EnrollmentId,
@@ -139,7 +151,16 @@ public static class CommonEntityMappings
                 {
                     CourseId = entity.Course.CourseId,
                     CourseName = entity.Course.CourseName,
-                    SemesterId = entity.Course.SemesterId
+                    SemesterId = entity.Course.SemesterId,
+                    Semester = includeSemester && entity.Course.Semester is not null
+                        ? new CourseSemesterBriefBusinessModel
+                        {
+                            SemesterId = entity.Course.Semester.SemesterId,
+                            SemesterName = entity.Course.Semester.SemesterName,
+                            StartDate = entity.Course.Semester.StartDate,
+                            EndDate = entity.Course.Semester.EndDate
+                        }
+                        : null
                 }
                 : null
         };

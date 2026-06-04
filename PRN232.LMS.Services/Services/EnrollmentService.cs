@@ -24,15 +24,26 @@ public class EnrollmentService : IEnrollmentService
         var size = query.Size < 1 ? 10 : query.Size;
 
         var includeStudent = ShouldExpand(query.Expand, "student");
-        var includeCourse = ShouldExpand(query.Expand, "course");
+        var includeSemester = ShouldExpand(query.Expand, "semester") || ShouldExpand(query.Expand, "course.semester");
+        var includeCourse = includeSemester || ShouldExpand(query.Expand, "course");
 
-        IQueryable<Enrollment> enrollmentsQuery = (includeStudent, includeCourse) switch
+        IQueryable<Enrollment> enrollmentsQuery = _unitOfWork.Enrollments.GetAll();
+
+        if (includeStudent)
         {
-            (true, true) => _unitOfWork.Enrollments.GetAll(null, e => e.Student, e => e.Course),
-            (true, false) => _unitOfWork.Enrollments.GetAll(null, e => e.Student),
-            (false, true) => _unitOfWork.Enrollments.GetAll(null, e => e.Course),
-            _ => _unitOfWork.Enrollments.GetAll()
-        };
+            enrollmentsQuery = enrollmentsQuery.Include(e => e.Student);
+        }
+
+        if (includeSemester)
+        {
+            enrollmentsQuery = enrollmentsQuery
+                .Include(e => e.Course)
+                .ThenInclude(c => c.Semester);
+        }
+        else if (includeCourse)
+        {
+            enrollmentsQuery = enrollmentsQuery.Include(e => e.Course);
+        }
 
         if (query.StudentId.HasValue)
         {
@@ -63,7 +74,7 @@ public class EnrollmentService : IEnrollmentService
 
         return new PagedResult<EnrollmentBusinessModel>
         {
-            Items = entities.Select(e => e.ToBusinessModel(includeStudent, includeCourse)).ToList(),
+            Items = entities.Select(e => e.ToBusinessModel(includeStudent, includeCourse, includeSemester)).ToList(),
             Page = page,
             PageSize = size,
             TotalItems = totalItems
@@ -73,17 +84,30 @@ public class EnrollmentService : IEnrollmentService
     public async Task<EnrollmentBusinessModel?> GetByIdAsync(int id, string? expand = null)
     {
         var includeStudent = ShouldExpand(expand, "student");
-        var includeCourse = ShouldExpand(expand, "course");
+        var includeSemester = ShouldExpand(expand, "semester") || ShouldExpand(expand, "course.semester");
+        var includeCourse = includeSemester || ShouldExpand(expand, "course");
 
-        Enrollment? entity = (includeStudent, includeCourse) switch
+        IQueryable<Enrollment> enrollmentsQuery = _unitOfWork.Enrollments.GetAll();
+
+        if (includeStudent)
         {
-            (true, true) => await _unitOfWork.Enrollments.GetByIdAsync(id, e => e.Student, e => e.Course),
-            (true, false) => await _unitOfWork.Enrollments.GetByIdAsync(id, e => e.Student),
-            (false, true) => await _unitOfWork.Enrollments.GetByIdAsync(id, e => e.Course),
-            _ => await _unitOfWork.Enrollments.GetByIdAsync(id)
-        };
+            enrollmentsQuery = enrollmentsQuery.Include(e => e.Student);
+        }
 
-        return entity?.ToBusinessModel(includeStudent, includeCourse);
+        if (includeSemester)
+        {
+            enrollmentsQuery = enrollmentsQuery
+                .Include(e => e.Course)
+                .ThenInclude(c => c.Semester);
+        }
+        else if (includeCourse)
+        {
+            enrollmentsQuery = enrollmentsQuery.Include(e => e.Course);
+        }
+
+        var entity = await enrollmentsQuery.FirstOrDefaultAsync(e => e.EnrollmentId == id);
+
+        return entity?.ToBusinessModel(includeStudent, includeCourse, includeSemester);
     }
 
     public async Task<EnrollmentBusinessModel> CreateAsync(EnrollmentBusinessModel model)
@@ -146,7 +170,8 @@ public class EnrollmentService : IEnrollmentService
     private static bool ShouldExpand(string? expand, string relation) =>
         !string.IsNullOrWhiteSpace(expand) &&
         expand.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Any(x => x.Equals(relation, StringComparison.OrdinalIgnoreCase));
+            .Any(x => x.Equals("all", StringComparison.OrdinalIgnoreCase) ||
+                      x.Equals(relation, StringComparison.OrdinalIgnoreCase));
 
     private static IQueryable<Enrollment> ApplySorting(IQueryable<Enrollment> query, string? sort)
     {

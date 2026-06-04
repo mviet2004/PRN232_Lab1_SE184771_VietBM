@@ -22,7 +22,15 @@ public static class StudentMappings
                 EnrollmentId = e.EnrollmentId,
                 CourseId = e.CourseId,
                 EnrollDate = e.EnrollDate,
-                Status = e.Status
+                Status = e.Status,
+                Course = e.Course is not null
+                    ? new EnrollmentCourseBriefBusinessModel
+                    {
+                        CourseId = e.Course.CourseId,
+                        CourseName = e.Course.CourseName,
+                        SemesterId = e.Course.SemesterId
+                    }
+                    : null
             }).ToList();
         }
 

@@ -12,6 +12,28 @@ namespace PRN232.LMS.API.Controllers;
 [Route("api/students")]
 public class StudentsController : ControllerBase
 {
+    private static readonly HashSet<string> AllowedFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "studentId",
+        "fullName",
+        "email",
+        "dateOfBirth",
+        "enrollments"
+    };
+
+    private static readonly HashSet<string> AllowedSortFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "studentId",
+        "fullName",
+        "email",
+        "dateOfBirth"
+    };
+
+    private static readonly HashSet<string> AllowedExpansions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "enrollments"
+    };
+
     private readonly IStudentService _studentService;
 
     public StudentsController(IStudentService studentService)
@@ -23,17 +45,55 @@ public class StudentsController : ControllerBase
     public async Task<ActionResult<ApiResponse<PagedData<object>>>> GetList(
         [FromQuery] string? search,
         [FromQuery] string? sort,
-        [FromQuery] int page = 1,
-        [FromQuery] int size = 10,
+        [FromQuery] int? page,
+        [FromQuery] int? size,
         [FromQuery] string? fields = null,
         [FromQuery] string? expand = null)
     {
+        var errors = new Dictionary<string, string>();
+
+        if (page.HasValue && page.Value < 1)
+        {
+            errors["page"] = "Page must be greater than or equal to 1.";
+        }
+
+        if (size.HasValue && size.Value < 1)
+        {
+            errors["size"] = "Size must be greater than or equal to 1.";
+        }
+
+        var invalidSortFields = GetInvalidSortFields(sort);
+        if (invalidSortFields.Count > 0)
+        {
+            errors["sort"] = $"Unsupported sort field(s): {string.Join(", ", invalidSortFields)}.";
+        }
+
+        var invalidFields = GetInvalidListValues(fields, AllowedFields);
+        if (invalidFields.Count > 0)
+        {
+            errors["fields"] = $"Unsupported field(s): {string.Join(", ", invalidFields)}.";
+        }
+
+        var invalidExpansions = GetInvalidListValues(expand, AllowedExpansions);
+        if (invalidExpansions.Count > 0)
+        {
+            errors["expand"] = $"Unsupported expansion(s): {string.Join(", ", invalidExpansions)}.";
+        }
+
+        if (errors.Count > 0)
+        {
+            return BadRequest(ApiResponse<PagedData<object>>.Fail("Missing or invalid query parameters", errors));
+        }
+
+        var pageValue = page.GetValueOrDefault(1);
+        var sizeValue = size.GetValueOrDefault(10);
+
         var result = await _studentService.GetListAsync(new StudentListQuery
         {
             Search = search,
             Sort = sort,
-            Page = page,
-            Size = size,
+            Page = pageValue,
+            Size = sizeValue,
             Fields = fields,
             Expand = expand
         });
@@ -55,6 +115,33 @@ public class StudentsController : ControllerBase
         };
 
         return Ok(ApiResponse<PagedData<object>>.Ok(data));
+    }
+
+    private static List<string> GetInvalidSortFields(string? sort)
+    {
+        if (string.IsNullOrWhiteSpace(sort))
+        {
+            return new List<string>();
+        }
+
+        return sort.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(field => field.StartsWith('-') ? field[1..] : field)
+            .Where(field => !AllowedSortFields.Contains(field))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static List<string> GetInvalidListValues(string? values, HashSet<string> allowedValues)
+    {
+        if (string.IsNullOrWhiteSpace(values))
+        {
+            return new List<string>();
+        }
+
+        return values.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(value => !allowedValues.Contains(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     [HttpGet("{id:int}")]

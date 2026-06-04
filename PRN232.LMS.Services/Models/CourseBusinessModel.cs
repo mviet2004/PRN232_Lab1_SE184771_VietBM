@@ -24,4 +24,5 @@ public class CourseEnrollmentBriefBusinessModel
     public int CourseId { get; set; }
     public DateTime EnrollDate { get; set; }
     public string Status { get; set; } = null!;
+    public EnrollmentStudentBriefBusinessModel? Student { get; set; }
 }
