@@ -20,7 +20,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedData<object>>>> GetList(
+    public async Task<ActionResult<ApiResponse<PagedData<CourseResponse>>>> GetList(
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int page = 1,
@@ -38,9 +38,9 @@ public class CoursesController : ControllerBase
             Expand = expand
         });
 
-        var items = result.Items.Select(x => x.ToResponseObject(fields)).ToList();
+        var items = result.Items.Select(x => x.ToResponse()).ToList();
 
-        var data = new PagedData<object>
+        var data = new PagedData<CourseResponse>
         {
             Items = items,
             Pagination = new PaginationMetadata
@@ -52,7 +52,7 @@ public class CoursesController : ControllerBase
             }
         };
 
-        return Ok(ApiResponse<PagedData<object>>.Ok(data));
+        return Ok(ApiResponse<PagedData<CourseResponse>>.Ok(data));
     }
 
     [HttpGet("{id:int}")]
@@ -72,7 +72,7 @@ public class CoursesController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<CourseResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<CourseResponse>.ValidationFail(ModelState));
         }
 
         try
@@ -92,7 +92,7 @@ public class CoursesController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<CourseResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<CourseResponse>.ValidationFail(ModelState));
         }
 
         try
@@ -112,14 +112,14 @@ public class CoursesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
+    public async Task<ActionResult<ApiResponse<EmptyResponse>>> Delete(int id)
     {
         var deleted = await _courseService.DeleteAsync(id);
         if (!deleted)
         {
-            return NotFound(ApiResponse<object>.Fail("Course not found"));
+            return NotFound(ApiResponse<EmptyResponse>.Fail("Course not found"));
         }
 
-        return Ok(ApiResponse<object>.Ok(new { }, "Course deleted successfully"));
+        return Ok(ApiResponse<EmptyResponse>.Ok(new EmptyResponse(), "Course deleted successfully"));
     }
 }

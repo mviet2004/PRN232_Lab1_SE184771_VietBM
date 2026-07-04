@@ -42,7 +42,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedData<object>>>> GetList(
+    public async Task<ActionResult<ApiResponse<PagedData<StudentResponse>>>> GetList(
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int? page,
@@ -82,7 +82,7 @@ public class StudentsController : ControllerBase
 
         if (errors.Count > 0)
         {
-            return BadRequest(ApiResponse<PagedData<object>>.Fail("Missing or invalid query parameters", errors));
+            return BadRequest(ApiResponse<PagedData<StudentResponse>>.Fail("Missing or invalid query parameters", errors));
         }
 
         var pageValue = page.GetValueOrDefault(1);
@@ -99,10 +99,10 @@ public class StudentsController : ControllerBase
         });
 
         var items = result.Items
-            .Select(s => s.ToResponseObject(fields))
+            .Select(s => s.ToResponse())
             .ToList();
 
-        var data = new PagedData<object>
+        var data = new PagedData<StudentResponse>
         {
             Items = items,
             Pagination = new PaginationMetadata
@@ -114,7 +114,7 @@ public class StudentsController : ControllerBase
             }
         };
 
-        return Ok(ApiResponse<PagedData<object>>.Ok(data));
+        return Ok(ApiResponse<PagedData<StudentResponse>>.Ok(data));
     }
 
     private static List<string> GetInvalidSortFields(string? sort)
@@ -163,7 +163,7 @@ public class StudentsController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<StudentResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<StudentResponse>.ValidationFail(ModelState));
         }
 
         var created = await _studentService.CreateAsync(request.ToBusinessModel());
@@ -180,7 +180,7 @@ public class StudentsController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<StudentResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<StudentResponse>.ValidationFail(ModelState));
         }
 
         var updated = await _studentService.UpdateAsync(id, request.ToBusinessModel());
@@ -193,14 +193,14 @@ public class StudentsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
+    public async Task<ActionResult<ApiResponse<EmptyResponse>>> Delete(int id)
     {
         var deleted = await _studentService.DeleteAsync(id);
         if (!deleted)
         {
-            return NotFound(ApiResponse<object>.Fail("Student not found"));
+            return NotFound(ApiResponse<EmptyResponse>.Fail("Student not found"));
         }
 
-        return Ok(ApiResponse<object>.Ok(new { }, "Student deleted successfully"));
+        return Ok(ApiResponse<EmptyResponse>.Ok(new EmptyResponse(), "Student deleted successfully"));
     }
 }

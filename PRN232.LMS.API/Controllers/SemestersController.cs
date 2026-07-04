@@ -20,7 +20,7 @@ public class SemestersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedData<object>>>> GetList(
+    public async Task<ActionResult<ApiResponse<PagedData<SemesterResponse>>>> GetList(
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int page = 1,
@@ -38,9 +38,9 @@ public class SemestersController : ControllerBase
             Expand = expand
         });
 
-        var items = result.Items.Select(x => x.ToResponseObject(fields)).ToList();
+        var items = result.Items.Select(x => x.ToResponse()).ToList();
 
-        var data = new PagedData<object>
+        var data = new PagedData<SemesterResponse>
         {
             Items = items,
             Pagination = new PaginationMetadata
@@ -52,7 +52,7 @@ public class SemestersController : ControllerBase
             }
         };
 
-        return Ok(ApiResponse<PagedData<object>>.Ok(data));
+        return Ok(ApiResponse<PagedData<SemesterResponse>>.Ok(data));
     }
 
     [HttpGet("{id:int}")]
@@ -72,7 +72,7 @@ public class SemestersController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<SemesterResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<SemesterResponse>.ValidationFail(ModelState));
         }
 
         var created = await _semesterService.CreateAsync(request.ToBusinessModel());
@@ -85,7 +85,7 @@ public class SemestersController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<SemesterResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<SemesterResponse>.ValidationFail(ModelState));
         }
 
         var updated = await _semesterService.UpdateAsync(id, request.ToBusinessModel());
@@ -98,14 +98,14 @@ public class SemestersController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
+    public async Task<ActionResult<ApiResponse<EmptyResponse>>> Delete(int id)
     {
         var deleted = await _semesterService.DeleteAsync(id);
         if (!deleted)
         {
-            return NotFound(ApiResponse<object>.Fail("Semester not found"));
+            return NotFound(ApiResponse<EmptyResponse>.Fail("Semester not found"));
         }
 
-        return Ok(ApiResponse<object>.Ok(new { }, "Semester deleted successfully"));
+        return Ok(ApiResponse<EmptyResponse>.Ok(new EmptyResponse(), "Semester deleted successfully"));
     }
 }

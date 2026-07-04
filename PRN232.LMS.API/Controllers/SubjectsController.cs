@@ -20,7 +20,7 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedData<object>>>> GetList(
+    public async Task<ActionResult<ApiResponse<PagedData<SubjectResponse>>>> GetList(
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int page = 1,
@@ -40,9 +40,9 @@ public class SubjectsController : ControllerBase
             Credit = credit
         });
 
-        var items = result.Items.Select(x => x.ToResponseObject(fields)).ToList();
+        var items = result.Items.Select(x => x.ToResponse()).ToList();
 
-        var data = new PagedData<object>
+        var data = new PagedData<SubjectResponse>
         {
             Items = items,
             Pagination = new PaginationMetadata
@@ -54,7 +54,7 @@ public class SubjectsController : ControllerBase
             }
         };
 
-        return Ok(ApiResponse<PagedData<object>>.Ok(data));
+        return Ok(ApiResponse<PagedData<SubjectResponse>>.Ok(data));
     }
 
     [HttpGet("{id:int}")]
@@ -74,7 +74,7 @@ public class SubjectsController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<SubjectResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<SubjectResponse>.ValidationFail(ModelState));
         }
 
         var created = await _subjectService.CreateAsync(request.ToBusinessModel());
@@ -87,7 +87,7 @@ public class SubjectsController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<SubjectResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<SubjectResponse>.ValidationFail(ModelState));
         }
 
         var updated = await _subjectService.UpdateAsync(id, request.ToBusinessModel());
@@ -100,14 +100,14 @@ public class SubjectsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
+    public async Task<ActionResult<ApiResponse<EmptyResponse>>> Delete(int id)
     {
         var deleted = await _subjectService.DeleteAsync(id);
         if (!deleted)
         {
-            return NotFound(ApiResponse<object>.Fail("Subject not found"));
+            return NotFound(ApiResponse<EmptyResponse>.Fail("Subject not found"));
         }
 
-        return Ok(ApiResponse<object>.Ok(new { }, "Subject deleted successfully"));
+        return Ok(ApiResponse<EmptyResponse>.Ok(new EmptyResponse(), "Subject deleted successfully"));
     }
 }

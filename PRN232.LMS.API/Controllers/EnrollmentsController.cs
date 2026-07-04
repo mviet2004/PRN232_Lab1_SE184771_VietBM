@@ -49,7 +49,7 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedData<object>>>> GetList(
+    public async Task<ActionResult<ApiResponse<PagedData<EnrollmentResponse>>>> GetList(
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int? page,
@@ -101,7 +101,7 @@ public class EnrollmentsController : ControllerBase
 
         if (errors.Count > 0)
         {
-            return BadRequest(ApiResponse<PagedData<object>>.Fail("Missing or invalid query parameters", errors));
+            return BadRequest(ApiResponse<PagedData<EnrollmentResponse>>.Fail("Missing or invalid query parameters", errors));
         }
 
         var pageValue = page.GetValueOrDefault(1);
@@ -119,10 +119,9 @@ public class EnrollmentsController : ControllerBase
             CourseId = courseId
         });
 
-        var responseFields = MergeFieldsWithExpansions(fields, expand);
-        var items = result.Items.Select(x => x.ToResponseObject(responseFields)).ToList();
+        var items = result.Items.Select(x => x.ToResponse()).ToList();
 
-        var data = new PagedData<object>
+        var data = new PagedData<EnrollmentResponse>
         {
             Items = items,
             Pagination = new PaginationMetadata
@@ -134,7 +133,7 @@ public class EnrollmentsController : ControllerBase
             }
         };
 
-        return Ok(ApiResponse<PagedData<object>>.Ok(data));
+        return Ok(ApiResponse<PagedData<EnrollmentResponse>>.Ok(data));
     }
 
     private static List<string> GetInvalidSortFields(string? sort)
@@ -212,7 +211,7 @@ public class EnrollmentsController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<EnrollmentResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<EnrollmentResponse>.ValidationFail(ModelState));
         }
 
         try
@@ -232,7 +231,7 @@ public class EnrollmentsController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse<EnrollmentResponse>.Fail("Invalid request", ModelState));
+            return BadRequest(ApiResponse<EnrollmentResponse>.ValidationFail(ModelState));
         }
 
         try
@@ -252,14 +251,14 @@ public class EnrollmentsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
+    public async Task<ActionResult<ApiResponse<EmptyResponse>>> Delete(int id)
     {
         var deleted = await _enrollmentService.DeleteAsync(id);
         if (!deleted)
         {
-            return NotFound(ApiResponse<object>.Fail("Enrollment not found"));
+            return NotFound(ApiResponse<EmptyResponse>.Fail("Enrollment not found"));
         }
 
-        return Ok(ApiResponse<object>.Ok(new { }, "Enrollment deleted successfully"));
+        return Ok(ApiResponse<EmptyResponse>.Ok(new EmptyResponse(), "Enrollment deleted successfully"));
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PRN232.LMS.API.Common;
+using PRN232.LMS.API.Models.Responses;
 using PRN232.LMS.Repositories.Context;
 
 namespace PRN232.LMS.API.Controllers;
@@ -17,7 +18,7 @@ public class HealthController : ControllerBase
     }
 
     [HttpGet("db")]
-    public async Task<ActionResult<ApiResponse<object>>> CheckDatabaseConnection()
+    public async Task<ActionResult<ApiResponse<HealthDatabaseResponse>>> CheckDatabaseConnection()
     {
         try
         {
@@ -26,10 +27,10 @@ public class HealthController : ControllerBase
             if (!canConnect)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                    ApiResponse<object>.Fail("Cannot connect to the local database"));
+                    ApiResponse<HealthDatabaseResponse>.Fail("Cannot connect to the local database"));
             }
 
-            return Ok(ApiResponse<object>.Ok(new
+            return Ok(ApiResponse<HealthDatabaseResponse>.Ok(new HealthDatabaseResponse
             {
                 Connected = true,
                 Database = _dbContext.Database.GetDbConnection().Database,
@@ -39,7 +40,7 @@ public class HealthController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                ApiResponse<object>.Fail("Database connection check failed", ex.Message));
+                ApiResponse<HealthDatabaseResponse>.Fail("Database connection check failed", ex.Message));
         }
     }
 }

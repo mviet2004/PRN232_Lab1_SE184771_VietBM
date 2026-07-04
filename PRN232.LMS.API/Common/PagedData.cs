@@ -2,6 +2,6 @@ namespace PRN232.LMS.API.Common;
 
 public class PagedData<T>
 {
-    public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
+    public List<T> Items { get; set; } = new();
     public PaginationMetadata Pagination { get; set; } = new();
 }
